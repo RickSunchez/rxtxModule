@@ -1,0 +1,119 @@
+ <script type="text/javascript">
+ 	var CTX, H, W, rxtx = [], SX, SY, onMove = false, newRXTX, setArea, setSpeed;
+
+ 	window.onload = () => {
+ 		let canvas = document.createElement("canvas");
+ 		W = document.body.offsetWidth;
+ 		H = document.body.offsetHeight;
+
+ 		canvas.width = W;
+ 		canvas.height = H;
+ 		document.body.appendChild(canvas);
+ 		CTX = canvas.getContext("2d");
+
+ 		setArea = 1000,
+		setSpeed = 5;
+
+ 		rxtx.push(new rxtxModule(1,620,  105, setArea, setSpeed)); 
+ 		rxtx.push(new rxtxModule(2,175,  860, setArea, setSpeed)); 
+ 		rxtx.push(new rxtxModule(0,1065, 860, setArea, setSpeed)); 
+
+ 		setInterval(update, 20);
+ 	}
+ 	window.onmousedown = () => {
+ 		onMove = true;
+ 		SX = event.clientX;
+ 		SY = event.clientY;
+ 		newRXTX = new rxtxModule(0, SX, SY, setArea, setSpeed);
+ 		newRXTX.draw();
+ 	}
+ 	window.onmousemove = () => {
+ 		if (!onMove) return false;
+ 		newRXTX.x = event.clientX;
+ 		newRXTX.y = event.clientY;
+ 	}
+ 	window.onmouseup = () => {
+ 		onMove = false;
+ 		rxtx.push(newRXTX);
+ 		delete newRXTX;
+ 	}
+
+
+ 	function update() {
+ 		clearCanvas();
+
+ 		rxtx.map(function(module) {
+ 			module.draw();
+ 			module.tx("My name is: " + module.ID);
+ 			module.rx();
+ 		})
+
+ 		if (newRXTX) newRXTX.draw();
+ 	}
+
+ 	function clearCanvas() {
+ 		CTX.clearRect(0,0, W, H);
+ 	}
+
+ 	function rxtxModule(ID, x,y, area, speed, text){
+ 		this.ID = ID ? ID : parseInt(Math.random()*99999);
+ 		this.x = x ? x : 0;
+ 		this.y = y ? y : 0;
+ 		this.maxArea = area ? area : 500;
+ 		this.speed = speed ? speed : 1;
+ 		this.text = text ? text : "default";
+
+ 		this.getTX = () => {return currentTX;}
+
+
+ 		let r = 5,
+ 			currentTX = r;
+
+ 		this.draw = () => {
+ 			CTX.beginPath();
+ 				CTX.fillStyle = "#FF5C6F";
+ 				CTX.arc(this.x, this.y, r, 0, 2*Math.PI, true);
+ 				CTX.fill();
+
+				CTX.font = "20px Courier";
+				CTX.fillText(this.ID, this.x + r, this.y - r);
+ 			CTX.closePath();
+ 		}
+
+ 		this.tx = (text) => {
+ 			CTX.beginPath();
+ 				CTX.strokeStyle = "#00FF05";
+ 				CTX.arc(this.x, this.y, currentTX, 0, 2*Math.PI, true);
+ 				CTX.stroke();
+ 			CTX.closePath();
+ 			currentTX = (currentTX >= this.maxArea) ? r : (currentTX + this.speed);
+ 			this.text = text;
+ 		}
+
+ 		this.rx = () => {
+ 			let x = this.x,
+ 				y = this.y,
+ 				ID = this.ID;
+
+ 			rxtx.map(function(module) {
+	 			if (module.ID == ID) return false;
+
+	 			let dx = Math.pow((x - module.x), 2),
+	 				dy = Math.pow((y - module.y), 2),
+	 				dr = Math.pow((r - module.getTX()), 2)
+
+	 			//console.log(module.x);
+	 			if ((dx + dy) < dr) {
+	 				console.log(module.text);
+	 			}
+	 		})
+ 		}
+
+ 	}
+ </script>
+ <style type="text/css">
+ 	* {
+ 		margin: 0px;
+ 		padding: 0px;
+ 	}
+ </style>
