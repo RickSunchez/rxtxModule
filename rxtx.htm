@@ -74,8 +74,8 @@
 
  		rxtx.map(function(module) {
  			module.draw();
- 			module.tx("My name is: " + module.ID);
- 			module.rx();
+ 			if (module.TXon) module.tx("My name is: " + module.ID);
+ 			if (module.RXon) module.rx();
  		})
 
  		if (newRXTX) newRXTX.draw();
@@ -98,6 +98,8 @@
  		this.speed = speed ? speed : 1;
  		this.text = text ? text : "default";
  		this.t = type;
+ 		this.RXon = false;
+ 		this.TXon = false;
 
  		this.getTX = () => {return currentTX;}
 
