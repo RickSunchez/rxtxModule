@@ -19,8 +19,8 @@
  		document.body.appendChild(canvas);
  		CTX = canvas.getContext("2d");
 
- 		setArea = 200,
-		setSpeed = 5;
+ 		setArea = 600,
+		setSpeed = 8;
 
  		setInterval(update, 20);
  	}
@@ -31,7 +31,7 @@
 
 		switch (action) {
  			case "ADD_POINT": 
- 				newRXTX = new rxtxModule(0, SX, SY, setArea, setSpeed, "", "normal");
+ 				newRXTX = new rxtxModule(0, SX, SY, setArea, setSpeed, "I'm module!", "normal");
  				newRXTX.draw();
  				break;
  			case "ADD_PASSIVE":
