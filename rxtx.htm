@@ -3,7 +3,7 @@
  		H, W, 
  		rxtx = [], 
  		SX, SY, 
- 		onMove = false, 
+ 		onMove = false, onField = false,
  		newRXTX, mainModule, findModule,
  		setArea, 
  		setSpeed, 
@@ -35,7 +35,11 @@
  				newRXTX.draw();
  				break;
  			case "ADD_PASSIVE":
- 				findModule = new rxtxModule(0, SX, SY, setArea, setSpeed, "", "passive");
+ 				if (!findModule) {
+ 					findModule = new rxtxModule(0, SX, SY, setArea, setSpeed, "Find me!", "passive");
+ 					findModule.TXon = true;
+ 					findModule.text = "123";
+ 				}
  				break;
  		}
  	}
@@ -71,19 +75,17 @@
 
  	function update() {
  		clearCanvas();
+ 		let field = rxtx;
 
- 		rxtx.map(function(module) {
+		if (!!findModule && !onField) {field.push(findModule); onField = true;}
+
+ 		field.map(function(module) {
  			module.draw();
- 			if (module.TXon) module.tx("My name is: " + module.ID);
+ 			if (module.TXon) module.tx();
  			if (module.RXon) module.rx();
  		})
 
  		if (newRXTX) newRXTX.draw();
- 		if (findModule) {
- 			findModule.draw();
- 			findModule.rx();
- 			findModule.tx("Find me!");
- 		}
  	}
 
  	function clearCanvas() {
@@ -98,7 +100,7 @@
  		this.speed = speed ? speed : 1;
  		this.text = text ? text : "default";
  		this.t = type;
- 		this.RXon = false;
+ 		this.RXon = true;
  		this.TXon = false;
 
  		this.getTX = () => {return currentTX;}
@@ -128,7 +130,7 @@
  				CTX.stroke();
  			CTX.closePath();
  			currentTX = (currentTX >= this.maxArea) ? r : (currentTX + this.speed);
- 			this.text = text;
+ 			this.text = text ? text : this.text;
  		}
 
  		this.rx = () => {
@@ -145,7 +147,7 @@
 
 	 			//console.log(module.x);
 	 			if ((dx + dy) < dr) {
-	 				console.log(module.text + ", my coords: " + module.x + ":" + module.y);
+	 				console.log(module.text);
 	 			}
 	 		})
  		}
