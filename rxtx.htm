@@ -1,33 +1,37 @@
  <script type="text/javascript">
  	var CTX, 
  		H, W, 
- 		rxtx = [], 
+ 		rxtx = [], service = [],
  		SX, SY, 
  		onMove = false, onField = false,
- 		newRXTX, mainModule, findModule,
+ 		newRXTX, mainModule, findModule, field,
  		setArea, 
  		setSpeed, 
  		action = "ADD_POINT";
 
  	window.onload = () => {
- 		let canvas = document.createElement("canvas");
- 		W = document.body.offsetWidth;
+ 		let canvas = document.getElementById("canvas");
+ 		W = document.body.offsetWidth - 300;
  		H = document.body.offsetHeight;
 
  		canvas.width = W;
  		canvas.height = H;
- 		document.body.appendChild(canvas);
  		CTX = canvas.getContext("2d");
 
- 		setArea = 600,
+ 		setArea = 300,
 		setSpeed = 8;
+
+		findModule = new rxtxModule(0, 100, H - 100, setArea, setSpeed, "Find me!", "passive");
+		mainModule = new rxtxModule(0, W - 100, 100, setArea, setSpeed, "Find me!", "main");
 
  		setInterval(update, 20);
  	}
  	window.onmousedown = () => {
- 		onMove = true;
  		SX = event.clientX;
  		SY = event.clientY;
+ 		
+ 		if (SX > W || SY > H) return false;
+ 		onMove = true;
 
 		switch (action) {
  			case "ADD_POINT": 
@@ -35,11 +39,16 @@
  				newRXTX.draw();
  				break;
  			case "ADD_PASSIVE":
- 				if (!findModule) {
- 					findModule = new rxtxModule(0, SX, SY, setArea, setSpeed, "Find me!", "passive");
- 					findModule.TXon = true;
- 					findModule.text = "123";
- 				}
+ 				findModule.x = SX;
+ 				findModule.y = SY;
+ 				break;
+ 			case "ADD_MAIN":
+ 				mainModule.x = SX;
+ 				mainModule.y = SY;
+ 				break;
+ 			case "ADD_SERVICE":
+ 				newRXTX = new rxtxModule(0, SX, SY, setArea, setSpeed, "", "service");
+ 				newRXTX.draw();
  				break;
  		}
  	}
@@ -47,6 +56,7 @@
  		if (!onMove) return false;
 
  		switch (action) {
+ 			case "ADD_SERVICE":
  			case "ADD_POINT": 
  				newRXTX.x = event.clientX;
  				newRXTX.y = event.clientY;
@@ -55,18 +65,30 @@
  				findModule.x = event.clientX;
  				findModule.y = event.clientY;
  				break;
+ 			case "ADD_MAIN":
+ 				mainModule.x = event.clientX;
+ 				mainModule.y = event.clientY;
+ 				break;
  		}
  		
  	}
  	window.onmouseup = () => {
+ 		if (SX > W || SY > H) return false;
+
  		onMove = false;
  		if (action == "ADD_POINT") {
  			rxtx.push(newRXTX);
- 			delete newRXTX;
  		}
+ 		if (action == "ADD_SERVICE") {
+ 			service.push(newRXTX);
+ 		}
+
+ 		delete newRXTX;
  	}
  	window.onkeydown = () => {
- 		if (event.keyCode == 17) action = "ADD_PASSIVE";
+ 		if (event.keyCode == 17) action = "ADD_PASSIVE"; //CTRL
+ 		if (event.keyCode == 16) action = "ADD_SERVICE"; //SHIFT
+ 		if (event.keyCode == 88) action = "ADD_MAIN"; //X
  	}
  	window.onkeyup = () => {
  		action = "ADD_POINT"
@@ -75,9 +97,8 @@
 
  	function update() {
  		clearCanvas();
- 		let field = rxtx;
 
-		if (!!findModule && !onField) {field.push(findModule); onField = true;}
+ 		field = rxtx.concat(service, findModule, mainModule);
 
  		field.map(function(module) {
  			module.draw();
@@ -100,7 +121,7 @@
  		this.speed = speed ? speed : 1;
  		this.text = text ? text : "default";
  		this.t = type;
- 		this.RXon = true;
+ 		this.RXon = false;
  		this.TXon = false;
 
  		this.getTX = () => {return currentTX;}
@@ -113,6 +134,7 @@
  			CTX.beginPath();
  				if (this.t == "normal") CTX.fillStyle = "#FF5C6F";
  				if (this.t == "passive") CTX.fillStyle = "#FE60ED";
+ 				if (this.t == "service") CTX.fillStyle = "#000000";
  				if (this.t == "main") CTX.fillStyle = "#00CF00";
  				
  				CTX.arc(this.x, this.y, r, 0, 2*Math.PI, true);
@@ -130,7 +152,12 @@
  				CTX.stroke();
  			CTX.closePath();
  			currentTX = (currentTX >= this.maxArea) ? r : (currentTX + this.speed);
- 			this.text = text ? text : this.text;
+ 			if (this.t == "service") {
+ 				this.text = this.ID + ":" + this.x + ":" + this.y;
+ 			}
+ 			else {
+ 				this.text = text ? text : this.text;
+ 			}
  		}
 
  		this.rx = () => {
@@ -138,14 +165,13 @@
  				y = this.y,
  				ID = this.ID;
 
- 			rxtx.map(function(module) {
+ 			field.map(function(module) {
 	 			if (module.ID == ID) return false;
 
 	 			let dx = Math.pow((x - module.x), 2),
 	 				dy = Math.pow((y - module.y), 2),
 	 				dr = Math.pow((r - module.getTX()), 2)
 
-	 			//console.log(module.x);
 	 			if ((dx + dy) < dr) {
 	 				console.log(module.text);
 	 			}
@@ -159,4 +185,17 @@
  		margin: 0px;
  		padding: 0px;
  	}
+ 	#canvas {
+ 		float: left;
+ 	}
+ 	#legend {
+ 		width: 300px;
+ 		height: 100vh;
+ 		background-color: #C3C3C3;
+ 		float: left;
+ 	}
  </style>
+ <body>
+ 	<canvas id="canvas"></canvas>
+ 	<div id="legend"></div>
+ </body>
