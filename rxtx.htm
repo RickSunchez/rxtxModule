@@ -21,8 +21,8 @@
  		setArea = 300,
 		setSpeed = 8;
 
-		mainModule = new rxtxModule(0, 100, H - 100, setArea, setSpeed, "Find me!", "main");
-		findModule = new rxtxModule(0, W - 100, 100, setArea, setSpeed, "Find me!", "passive");
+		mainModule = new rxtxModule(1, 100, H - 100, setArea, setSpeed, "8888123:9999:find", "main");
+		findModule = new rxtxModule(9999, W - 100, 100, setArea, setSpeed, "Find me!", "passive");
 
  		setInterval(update, 20);
  	}
@@ -121,8 +121,10 @@
  		this.speed = speed ? speed : 1;
  		this.text = text ? text : "default";
  		this.t = type;
- 		this.RXon = false;
+ 		this.RXon = true;
  		this.TXon = false;
+ 		this.currentQuery = "";
+ 		this.currentQueryCounter = 0;
 
  		this.getTX = () => {return currentTX;}
 
@@ -152,18 +154,15 @@
  				CTX.stroke();
  			CTX.closePath();
  			currentTX = (currentTX >= this.maxArea) ? r : (currentTX + this.speed);
- 			if (this.t == "service") {
- 				this.text = this.ID + ":" + this.x + ":" + this.y;
- 			}
- 			else {
- 				this.text = text ? text : this.text;
- 			}
+
+ 			this.text = text ? text : this.text;
  		}
 
  		this.rx = () => {
  			let x = this.x,
  				y = this.y,
- 				ID = this.ID;
+ 				ID = this.ID,
+ 				mod = this;
 
  			field.map(function(module) {
 	 			if (module.ID == ID) return false;
@@ -173,19 +172,49 @@
 	 				dr = Math.pow((r - module.getTX()), 2)
 
 	 			if ((dx + dy) < dr) {
-	 				console.log(module.text);
-	 				RXcommand(module.text);
+	 				RXcommand(module.text, mod);
 	 			}
 	 		})
  		}
  	}
 
- 	function RXcommand(command) {
+ 	function RXcommand(command, module) {
+ 		if (command.substring(0,4) != "8888") return false;
 
+ 		let comm = command.substring(4).split(":");
+ 		
+ 		if (module.currentQuery == comm[0] || module.currentQueryCounter) {
+ 			module.currentQueryCounter = module.currentQueryCounter ? module.currentQueryCounter : new Date().getTime();
+
+ 			let now = new Date().getTime();
+
+ 			if ((now - module.currentQueryCounter) >= 1000) {
+ 				module.TXon = false;
+ 				return false;
+ 			}
+ 		}
+
+ 		if (comm[1] != module.ID) {
+ 			module.currentQuery = comm[0];
+ 			module.text = command;
+ 			module.TXon = true;
+ 			return false;
+ 		}
+
+ 		if (comm[1] == module.ID) {
+ 			if (module.currentQuery != "finded"){
+ 				field.map(function(m) {
+		 			m.TXon = false;
+		 		})
+ 				alert("Find!");
+ 			}
+ 			module.currentQuery = "finded";
+ 		}
  	}
 
  	function drawService(obj) {
- 		let mapPts = [];
+ 		let mapPts = [],
+ 			startID = 6000;
 
  		let dH_count = Math.ceil((H-100) / 250),
  			dW_count = Math.ceil((W-100) / 250),
@@ -205,17 +234,18 @@
  		}
 
  		mapPts.map(function(pt){
- 			service.push(new rxtxModule(0, pt[0],pt[1], setArea, setSpeed, "", "service"))
+ 			service.push(new rxtxModule(startID++, pt[0],pt[1], setArea, setSpeed, "", "service"))
  		})
  		
  		obj.disabled = true;
  	}
 
  	function drawNormal(obj) {
- 		let mapPts = JSON.parse('[[151,835],[222,829],[234,760],[299,736],[363,694],[373,623],[446,603],[505,539],[455,495],[533,456],[618,439],[640,357],[707,354],[709,278],[777,271],[841,270],[862,220],[928,192],[916,141],[991,136],[1064,132],[1040,258],[900,418],[892,373],[781,502],[906,573],[1000,469],[750,684],[570,751],[909,781],[775,798],[283,572],[145,630],[150,516],[169,354],[271,449],[411,362],[444,245],[562,278],[666,190],[567,157],[736,106],[796,175],[373,143],[268,217],[343,287],[532,352],[634,600],[679,726],[461,729],[405,832],[565,863],[871,688],[1045,666],[1034,559],[1100,412],[985,337]]');
+ 		let mapPts = JSON.parse('[[151,835],[222,829],[234,760],[299,736],[363,694],[373,623],[446,603],[505,539],[455,495],[533,456],[618,439],[640,357],[707,354],[709,278],[777,271],[841,270],[862,220],[928,192],[916,141],[991,136],[1064,132],[1040,258],[900,418],[892,373],[781,502],[906,573],[1000,469],[750,684],[570,751],[909,781],[775,798],[283,572],[145,630],[150,516],[169,354],[271,449],[411,362],[444,245],[562,278],[666,190],[567,157],[736,106],[796,175],[373,143],[268,217],[343,287],[532,352],[634,600],[679,726],[461,729],[405,832],[565,863],[871,688],[1045,666],[1034,559],[1100,412],[985,337]]'),
+ 			startID = 5000;
 
  		mapPts.map(function(pt){
- 			rxtx.push(new rxtxModule(0, pt[0]*(W/1184),pt[1], setArea, setSpeed, "", "normal"))
+ 			rxtx.push(new rxtxModule(startID++, pt[0]*(W/1184),pt[1], setArea, setSpeed, "", "normal"))
  		})
 
  		obj.disabled = true;
