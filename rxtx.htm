@@ -1,3 +1,4 @@
+ <script type="text/javascript" src="rxtx_configs.js"></script>
  <script type="text/javascript">
  	var CTX, 
  		H, W, 
@@ -7,7 +8,8 @@
  		newRXTX, mainModule, findModule, field,
  		setArea, 
  		setSpeed, 
- 		action = "ADD_POINT";
+ 		action = "ADD_POINT",
+ 		modules_list;
 
  	window.onload = () => {
  		let canvas = document.getElementById("canvas");
@@ -21,8 +23,19 @@
  		setArea = 300,
 		setSpeed = 8;
 
-		mainModule = new rxtxModule(1, 100, H - 100, setArea, setSpeed, "8888123:9999:find", "main");
+		mainModule = new rxtxModule(1, 100, H - 100, setArea, setSpeed, "", "main");
 		findModule = new rxtxModule(9999, W - 100, 100, setArea, setSpeed, "Find me!", "passive");
+
+		modules_list = document.getElementById('modules_list');
+		let map_list = document.getElementById('map_list');
+		rxtxConfigs.map(function(config, i){
+			let opt = document.createElement("option");
+
+			opt.value = i;
+			opt.innerText = config["rus_name"];
+
+			map_list.appendChild(opt);
+		})
 
  		setInterval(update, 20);
  	}
@@ -30,26 +43,27 @@
  		SX = event.clientX;
  		SY = event.clientY;
  		
- 		if (SX > W || SY > H) return false;
- 		onMove = true;
+ 		if (SX < W && SY < H) {
+ 			onMove = true;
 
-		switch (action) {
- 			case "ADD_POINT": 
- 				newRXTX = new rxtxModule(0, SX, SY, setArea, setSpeed, "I'm module!", "normal");
- 				newRXTX.draw();
- 				break;
- 			case "ADD_PASSIVE":
- 				findModule.x = SX;
- 				findModule.y = SY;
- 				break;
- 			case "ADD_MAIN":
- 				mainModule.x = SX;
- 				mainModule.y = SY;
- 				break;
- 			case "ADD_SERVICE":
- 				newRXTX = new rxtxModule(0, SX, SY, setArea, setSpeed, "", "service");
- 				newRXTX.draw();
- 				break;
+			switch (action) {
+	 			case "ADD_POINT": 
+	 				newRXTX = new rxtxModule(0, SX, SY, setArea, setSpeed, "I'm module!", "normal");
+	 				newRXTX.draw();
+	 				break;
+	 			case "ADD_PASSIVE":
+	 				findModule.x = SX;
+	 				findModule.y = SY;
+	 				break;
+	 			case "ADD_MAIN":
+	 				mainModule.x = SX;
+	 				mainModule.y = SY;
+	 				break;
+	 			case "ADD_SERVICE":
+	 				newRXTX = new rxtxModule(0, SX, SY, setArea, setSpeed, "", "service");
+	 				newRXTX.draw();
+	 				break;
+	 		}
  		}
  	}
  	window.onmousemove = () => {
@@ -77,6 +91,7 @@
 
  		onMove = false;
  		if (action == "ADD_POINT") {
+ 			appendNewInList(newRXTX.ID);
  			rxtx.push(newRXTX);
  		}
  		if (action == "ADD_SERVICE") {
@@ -109,12 +124,8 @@
  		if (newRXTX) newRXTX.draw();
  	}
 
- 	function clearCanvas() {
- 		CTX.clearRect(0,0, W, H);
- 	}
-
  	function rxtxModule(ID, x,y, area, speed, text, type){
- 		this.ID = ID ? ID : parseInt(Math.random()*99999);
+ 		this.ID = ID ? ID : parseInt(Math.random()*999999 + 99999);
  		this.x = x ? x : 0;
  		this.y = y ? y : 0;
  		this.maxArea = area ? area : 500;
@@ -144,6 +155,8 @@
 
 				CTX.font = "10px Courier";
 				CTX.fillText(this.ID, this.x + r, this.y - r);
+
+				if (!this.TXon) currentTX = r;
  			CTX.closePath();
  		}
 
@@ -203,15 +216,37 @@
 
  		if (comm[1] == module.ID) {
  			if (module.currentQuery != "finded"){
- 				field.map(function(m) {
-		 			m.TXon = false;
-		 		})
+ 				offAll();
  				alert("Find!");
  			}
  			module.currentQuery = "finded";
  		}
  	}
 
+//-----------------------------------------------------------------------------------
+//--------------------------------- LEGEND ELEMENTS ---------------------------------
+//-----------------------------------------------------------------------------------
+ 	function mainStart() {
+ 		offAll();
+
+ 		let findID = parseInt(modules_list.value);
+
+ 		mainModule.TXon = mainModule.TXon ? false : true;
+ 		mainModule.text = "8888123:"+findID+":find";
+ 	}
+
+ 	function changeFindModule(newId) {
+ 		rxtx.map(function(m,i){
+ 			if (m.ID != newId) return false;
+ 			let tmp = findModule;
+
+ 			findModule = m;
+			findModule.t = tmp.t;
+
+			rxtx[i] = tmp;
+			rxtx[i].t = 'normal';
+ 		})
+ 	}
  	function drawService(obj) {
  		let mapPts = [],
  			startID = 6000;
@@ -240,16 +275,81 @@
  		obj.disabled = true;
  	}
 
- 	function drawNormal(obj) {
- 		let mapPts = JSON.parse('[[151,835],[222,829],[234,760],[299,736],[363,694],[373,623],[446,603],[505,539],[455,495],[533,456],[618,439],[640,357],[707,354],[709,278],[777,271],[841,270],[862,220],[928,192],[916,141],[991,136],[1064,132],[1040,258],[900,418],[892,373],[781,502],[906,573],[1000,469],[750,684],[570,751],[909,781],[775,798],[283,572],[145,630],[150,516],[169,354],[271,449],[411,362],[444,245],[562,278],[666,190],[567,157],[736,106],[796,175],[373,143],[268,217],[343,287],[532,352],[634,600],[679,726],[461,729],[405,832],[565,863],[871,688],[1045,666],[1034,559],[1100,412],[985,337]]'),
+ 	function selectMap(mapID) {
+ 		let mapPts = JSON.parse(rxtxConfigs[mapID]['map']),
  			startID = 5000;
 
- 		mapPts.map(function(pt){
- 			rxtx.push(new rxtxModule(startID++, pt[0]*(W/1184),pt[1], setArea, setSpeed, "", "normal"))
- 		})
+ 		rxtx = [];
 
- 		obj.disabled = true;
+ 		mapPts.map(function(pt){
+ 			let currentId = startID++;
+ 			rxtx.push(new rxtxModule(currentId, pt[0]*(W/1184),pt[1]*(H/987), setArea, setSpeed, "", "normal"));
+
+ 			appendNewInList(currentId);
+ 		})
  	}
+//-----------------------------------------------------------------------------------
+//--------------------------------- LEGEND ELEMENTS ---------------------------------
+//-----------------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------------
+//--------------------------------- MICRO FUNCTIONS ---------------------------------
+//-----------------------------------------------------------------------------------
+ 	function offAll() {
+ 		field.map(function(m) {
+ 			m.TXon = false;
+ 			m.text = "";
+ 			m.currentTX = 0;
+ 			m.currentQuery = "";
+ 			m.currentQueryCounter = 0;
+ 		})
+ 	}
+
+ 	function appendNewInList(ID){
+		let opt = document.createElement("option");
+		opt.value = ID;
+		opt.innerText = ID;
+
+		modules_list.appendChild(opt);
+ 	}
+
+ 	function clearCanvas() {
+ 		CTX.clearRect(0,0, W, H);
+ 	}
+//-----------------------------------------------------------------------------------
+//--------------------------------- MICRO FUNCTIONS ---------------------------------
+//-----------------------------------------------------------------------------------
+
+//////////////////////////////////////////////asdasdasdasdasdasdasdasdsadasd
+//////////////////////////////////////////////asdasdasdasdasdasdasdasdsadasd
+//////////////////////////////////////////////asdasdasdasdasdasdasdasdsadasd
+/*
+function test() {
+	let mapPts = [],
+		sx = 100, 
+		sy = H - 100,
+		n = 0,m = 0;
+
+	for (let i=50; i<(W-100); i+= 91) {
+		n++;m=0;
+		for (let j=50; j<(H-120); j+=72){
+			m++;
+			if (n == m)
+				mapPts.push([sx+i, sy-j]);
+		}
+	}
+
+	rxtx = [];
+
+	console.log(JSON.stringify(mapPts));
+	mapPts.map(function(pt){
+		rxtx.push(new rxtxModule(0, pt[0]*(W/1184),pt[1]*(H/987), setArea, setSpeed, "", "normal"));
+	})
+}
+*/
+//////////////////////////////////////////////asdasdasdasdasdasdasdasdsadasd
+//////////////////////////////////////////////asdasdasdasdasdasdasdasdsadasd
+//////////////////////////////////////////////asdasdasdasdasdasdasdasdsadasd
  </script>
  <style type="text/css">
  	* {
@@ -257,13 +357,17 @@
  		padding: 0px;
  	}
  	#canvas {
- 		float: left;
+ 		position: absolute;
+ 		top: 0px;
+ 		left: 0px;
  	}
  	#legend {
  		width: 300px;
  		height: 100vh;
  		background-color: #C3C3C3;
- 		float: left;
+ 		position: absolute;
+ 		top: 0px;
+ 		right: 0px;
  	}
  	button {
  		width: 100%;
@@ -274,12 +378,25 @@
  	button:hover {
  		background-color: #FFFFFF;
  	}
+ 	select {
+ 		position: relative;
+ 		width: 100%;
+ 		height: 75px;
+ 	}
  </style>
  <body>
  	<canvas id="canvas"></canvas>
  	<div id="legend">
- 		<button onclick="mainModule.TXon = mainModule.TXon ? false : true">mainStart()</button>
+ 		<button onclick="mainStart()">mainStart()</button>
  		<button onclick="drawService(this)">drawService()</button>
- 		<button onclick="drawNormal(this);">drawNormal()</button>
+ 		<select id="map_list" onchange="selectMap(this.value)">
+ 			<option selected disabled>Выберите карту модулей</option>
+ 		</select>	
+ 		<select id="modules_list" onchange="changeFindModule(this.value)">
+ 			<option>9999</option>
+ 		</select>	
+
+ 		<!--<button onclick="test()">test()</button>-->
  	</div>
+
  </body>
